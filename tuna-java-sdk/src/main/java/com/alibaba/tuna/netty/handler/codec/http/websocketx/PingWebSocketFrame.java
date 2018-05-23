@@ -1,0 +1,78 @@
+/*
+ * Copyright 2012 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+package com.alibaba.tuna.netty.handler.codec.http.websocketx;
+
+import com.alibaba.tuna.netty.buffer.ByteBuf;
+import com.alibaba.tuna.netty.buffer.Unpooled;
+
+/**
+ * Web Socket frame containing binary data
+ */
+public class PingWebSocketFrame extends WebSocketFrame {
+
+    /**
+     * Creates a new empty ping frame.
+     */
+    public PingWebSocketFrame() {
+        super(true, 0, Unpooled.buffer(0));
+    }
+
+    /**
+     * Creates a new ping frame with the specified binary data.
+     *
+     * @param binaryData
+     *            the content of the frame.
+     */
+    public PingWebSocketFrame(ByteBuf binaryData) {
+        super(binaryData);
+    }
+
+    /**
+     * Creates a new ping frame with the specified binary data
+     *
+     * @param finalFragment
+     *            flag indicating if this frame is the final fragment
+     * @param rsv
+     *            reserved bits used for protocol extensions
+     * @param binaryData
+     *            the content of the frame.
+     */
+    public PingWebSocketFrame(boolean finalFragment, int rsv, ByteBuf binaryData) {
+        super(finalFragment, rsv, binaryData);
+    }
+
+    @Override
+    public PingWebSocketFrame copy() {
+        return new PingWebSocketFrame(isFinalFragment(), rsv(), content().copy());
+    }
+
+    @Override
+    public PingWebSocketFrame duplicate() {
+        return new PingWebSocketFrame(isFinalFragment(), rsv(), content().duplicate());
+    }
+
+    @Override
+    public PingWebSocketFrame retain() {
+        super.retain();
+        return this;
+    }
+
+    @Override
+    public PingWebSocketFrame retain(int increment) {
+        super.retain(increment);
+        return this;
+    }
+}
