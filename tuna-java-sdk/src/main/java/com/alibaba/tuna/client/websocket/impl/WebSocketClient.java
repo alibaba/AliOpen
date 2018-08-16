@@ -48,6 +48,8 @@ public final class WebSocketClient {
 
 	private Channel channel = null;
 
+	private static final int DEFAULT_PORT = 80;
+
 	//内部使用
 	private String host;
 	private int port;
@@ -75,7 +77,7 @@ public final class WebSocketClient {
 			String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
 			final boolean ssl = "wss".equalsIgnoreCase(scheme);
 
-			port = uri.getPort();
+			port = uri.getPort() == -1 ? DEFAULT_PORT : uri.getPort();
 			host = uri.getHost();
 
 			//初始化handshake
