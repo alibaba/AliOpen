@@ -19,44 +19,44 @@ package com.alibaba.tuna.client.websocket.impl;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.alibaba.tuna.client.websocket.TunaWebSocketClient;
 import com.alibaba.tuna.client.websocket.WebSocketMessageType;
-import com.alibaba.tuna.client.websocket.TunaWebsocketClient;
 import com.alibaba.tuna.client.websocket.WebSocketMessage;
 
 public class InternalMessageHandler implements ClientLog.InnerHandler {
 
 	private ThreadPoolExecutor threadPool;
-	private TunaWebsocketClient tunaClient;
+	private TunaWebSocketClient tunaClient;
 	protected volatile boolean stopped;
 
 
-	public InternalMessageHandler(ThreadPoolExecutor threadPool){
+	public InternalMessageHandler(ThreadPoolExecutor threadPool) {
 		this.threadPool=threadPool;
 	}
 
 	@Override
 	public void onMessage(final WebSocketMessage message) {
 		while (!stopped) {
-			try{
+			try {
 				threadPool.submit(new Runnable() {
 					public void run() {
 						boolean status = true;
-						WebSocketMessageType type =null;
-						try{
+						WebSocketMessageType type = null;
+						try {
 							type = WebSocketMessageType.valueOf(message.getType());
-						}catch(Exception e){
-							ClientLog.error("tuna message type:"+message.getType(),e);
+						} catch(Exception e) {
+							ClientLog.error("tuna message type:" + message.getType(), e);
 							return;
 						}
 
-						switch(type){
+						switch (type) {
 							//处理服务端连接成功确认
-							case CONNECT_ACK:{
+							case CONNECT_ACK: {
 								tunaClient.setConnect();
 								break;
 							}
 							//处理服务端推送的消息
-							case SERVER_PUSH:{
+							case SERVER_PUSH: {
 								long start = System.currentTimeMillis();
 								try {
 									status = tunaClient.getTunaMessageHandler().onMessage(message);
@@ -65,24 +65,25 @@ public class InternalMessageHandler implements ClientLog.InnerHandler {
 								}
 								if (status) {
 									long end = System.currentTimeMillis();
-									message.setCostInIsv(end-start);//记录耗时，并上传至服务端
+									//记录耗时，并上传至服务端
+									message.setCostInIsv(end - start);
 									//如果是业务消息，则确认。
 									tunaClient.confirm(message);
 								}
 								break;
 							}
 
-							case CLOSE:{
+							case CLOSE: {
 								break;
 							}
 
-							case SYSTEM:{
-								ClientLog.warn("system error:"+message.getContent());
+							case SYSTEM: {
+								ClientLog.warn("system error:" + message.getContent());
 								break;
 							}
 
-							default:{
-								ClientLog.warn("unknow error:"+message);
+							default: {
+								ClientLog.warn("unknown error:" + message);
 								break;
 							}
 						}
@@ -102,7 +103,7 @@ public class InternalMessageHandler implements ClientLog.InnerHandler {
 
 	}
 
-	public void setTunaClient(TunaWebsocketClient tunaClient) {
+	public void setTunaClient(TunaWebSocketClient tunaClient) {
 		this.tunaClient = tunaClient;
 	}
 	public void stop (){

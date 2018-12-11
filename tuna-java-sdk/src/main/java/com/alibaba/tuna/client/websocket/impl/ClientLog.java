@@ -16,7 +16,7 @@
  */
 package com.alibaba.tuna.client.websocket.impl;
 
-import com.alibaba.tuna.client.websocket.TunaWebsocketClient;
+import com.alibaba.tuna.client.websocket.TunaWebSocketClient;
 import com.alibaba.tuna.client.websocket.WebSocketMessage;
 
 import org.apache.commons.logging.Log;
@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 public class ClientLog {
 
-	private static final Log log = LogFactory.getLog(TunaWebsocketClient.class);
+	private static final Log log = LogFactory.getLog(TunaWebSocketClient.class);
 	public static void warn(Object msg){
 		log.warn(msg);
 	}
@@ -38,10 +38,19 @@ public class ClientLog {
 	/**
      * 内部消息处理
      */
-    public static interface InnerHandler {
-        void onMessage(WebSocketMessage message);
+    public interface InnerHandler {
+		/**
+		 * SDK处理收到的WebSocketMessage消息逻辑
+		 * @param message
+		 */
+		void onMessage(WebSocketMessage message);
 
-        void setTunaClient(TunaWebsocketClient tunaClient);
+		/**
+		 *
+		 * @param tunaClient
+		 */
+        void setTunaClient(TunaWebSocketClient tunaClient);
+
         void stop();
 
     }

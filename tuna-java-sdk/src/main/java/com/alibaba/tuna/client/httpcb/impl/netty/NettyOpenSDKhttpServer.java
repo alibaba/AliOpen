@@ -58,10 +58,10 @@ public class NettyOpenSDKhttpServer implements OpenSDKHttpServer {
 			try {
 				SelfSignedCertificate ssc = new SelfSignedCertificate();
 				sslCtx = SslContext.newServerContext(ssc.certificate(), ssc.privateKey());
-			} catch (CertificateException cettifactionException) {
-				throw new ClientStartException("Exception occured when initial with SSL.", cettifactionException);
+			} catch (CertificateException certificationException) {
+				throw new ClientStartException("Exception occurs when initial with SSL.", certificationException);
 			} catch (SSLException sslException) {
-				throw new ClientStartException("Exception occured when initial with SSL.", sslException);
+				throw new ClientStartException("Exception occurs when initial with SSL.", sslException);
 			}
 
 		} else {
@@ -78,7 +78,7 @@ public class NettyOpenSDKhttpServer implements OpenSDKHttpServer {
 
 			bootstrap.bind(port).sync().channel().closeFuture().sync();
 		} catch (Exception exception) {
-			throw new ClientStartException("Exception occured when initial.", exception);
+			throw new ClientStartException("Exception occurs when initial.", exception);
 		} finally {
 			workerGroup.shutdownGracefully();
 			bossGroup.shutdownGracefully();

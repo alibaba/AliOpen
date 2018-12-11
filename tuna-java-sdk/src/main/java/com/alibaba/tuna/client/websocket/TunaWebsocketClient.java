@@ -16,15 +16,15 @@
  */
 package com.alibaba.tuna.client.websocket;
 
-import java.util.Date;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.alibaba.tuna.client.api.ClientStartException;
 import com.alibaba.tuna.client.api.TunaClient;
@@ -38,53 +38,73 @@ import com.alibaba.tuna.util.ClientUtils;
 /**
  * WebSocket 通道模式下，客户端实现
  */
-public class TunaWebsocketClient implements TunaClient {
-	public static  int QUEUE_SIZE = 2000; // 消息缓冲队列大小
-	public static  int THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 10; // 并发处理的线程数量
-	public static long FETCH_PEROID = 30; //长链心跳时间，单位s
-	public static long RECONNECT_INTERVAL = 10;//长链重连间隔时间，单位s
-
+public class TunaWebSocketClient implements TunaClient {
 	/**
-	 * appkey,开放平台唯一标识
+	 * 消息缓冲队列大小
+	 */
+	public static  int QUEUE_SIZE = 2000;
+	/**
+	 * SDK TunaWebSocketClient默认并发处理的线程数量
+	 */
+	public static  int DEFAULT_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 40;
+	/**
+	 * 长链心跳时间，单位s
+	 */
+	public static long FETCH_PERIOD = 30;
+	/**
+	 * 长链重连间隔时间，单位s
+	 */
+	public static long RECONNECT_INTERVAL = 10;
+	/**
+	 * appKey,开放平台唯一标识
 	 */
 	private String appKey;
 	/**
-	 * appkey对应的密钥
+	 * appKey对应的密钥
 	 */
 	private String secret;
 	/**
-	 * 开放王平台推送服务端地址
+	 * 开放平台推送服务端地址
 	 */
 	private String oceanUrl;
+	/**
+	 * 客户端接收消息线程数
+	 */
+	private int threadNum;
 
 	private WebSocketClient webSocketClient;
 	private WebSocketMessageHandler tunaMessageHandler;
 	private InternalMessageHandler internalMessageHandler;
 
-	private Timer heartBeatTimer;
-	private Timer reconnectTimer;
+	private ScheduledExecutorService heartBeatTimer;
+	private ScheduledExecutorService reconnectTimer;
 
 	/**
 	 * 当前是否和服务端保持长链接（双方都感知）
 	 */
 	final AtomicBoolean isConnect = new AtomicBoolean(false);
 
-	public TunaWebsocketClient(String appKey, String secret, String url) {
+	public TunaWebSocketClient(String appKey, String secret, String url) {
+		this(appKey, secret, url, DEFAULT_THREAD_COUNT);
+	}
+
+	public TunaWebSocketClient(String appKey, String secret, String url, int threadNum) {
 		super();
-		ClientLog.warn("TunaWebsocketClient init,appkey," + appKey + ",secret," + secret);
+		ClientLog.warn("TunaWebSocketClient init,appKey," + appKey + ",secret," + secret);
 		this.appKey = appKey;
 		this.secret = secret;
 		this.oceanUrl = url;
+		this.threadNum = (threadNum <= 0) ? DEFAULT_THREAD_COUNT : threadNum;
 
-		ThreadPoolExecutor threadPool = new ThreadPoolExecutor(THREAD_COUNT, THREAD_COUNT,
-				FETCH_PEROID*2, TimeUnit.MICROSECONDS,
+		ThreadPoolExecutor threadPool = new ThreadPoolExecutor(threadNum/4, threadNum,
+				FETCH_PERIOD*2, TimeUnit.MICROSECONDS,
 				new ArrayBlockingQueue<Runnable>(QUEUE_SIZE),
 				new NamedThreadFactory("tuna-worker"));
 
 		internalMessageHandler = new InternalMessageHandler(threadPool);
 		internalMessageHandler.setTunaClient(this);
 
-		webSocketClient = new WebSocketClient(url,internalMessageHandler);
+		webSocketClient = new WebSocketClient(url, internalMessageHandler);
 	}
 
 	/**
@@ -104,46 +124,44 @@ public class TunaWebsocketClient implements TunaClient {
 			ClientLog.error("connect error", e);
 			throw new ClientStartException(e);
 		}
-		this.webSocketClient.sendConnect(appKey,secret);
-		this.doHearBeat();
+		this.webSocketClient.sendConnect(appKey, secret);
+		this.doHeartBeat();
 		this.startReconnect();
 	}
 
-	private void doHearBeat() {
+	private void doHeartBeat() {
+		this.heartBeatTimer = new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("heartbeat-schedule-pool", Boolean.TRUE, Thread.NORM_PRIORITY));
 		TimerTask heartBeatTimerTask = new TimerTask() {
 			public void run() {
-				if(isConnect()){
+				if (isConnect()) {
 					ClientLog.warn("heartBeatTimerTask start");
-					WebSocketMessage tm = new WebSocketMessage();
-					tm.setAppKey(appKey);
-					tm.setType(WebSocketMessageType.HEARTBEAT.name());
-					tm.setPubTime(System.currentTimeMillis());
+					WebSocketMessage wsm = new WebSocketMessage();
+					wsm.setAppKey(appKey);
+					wsm.setType(WebSocketMessageType.HEARTBEAT.name());
+					wsm.setPubTime(System.currentTimeMillis());
 					try {
-						tm.setSign(ClientUtils.sign(tm, secret));
+						wsm.setSign(ClientUtils.sign(wsm, secret));
 					} catch (Exception e) {
-						ClientLog.warn("TunaWebsocketClient sign error:" + e.getMessage());
+						ClientLog.warn("TunaWebSocketClient sign error: " + e.getMessage());
 					}
 
-					webSocketClient.send(tm);
-					ClientLog.warn("heartBeatTimerTask end" + JSON.toJSONString(tm));
-				}else{
+					webSocketClient.send(wsm);
+					ClientLog.warn("heartBeatTimerTask end " + JSON.toJSONString(wsm));
+				} else {
 					//do nothing
 				}
 			}
 		};
-		Date begin = new Date();
-		begin.setTime(begin.getTime() + FETCH_PEROID * 1000L);
-		this.heartBeatTimer = new Timer("tuna-heartbeat", true);
-		this.heartBeatTimer.schedule(heartBeatTimerTask, begin, FETCH_PEROID * 1000L);
+		this.heartBeatTimer.scheduleAtFixedRate(heartBeatTimerTask, FETCH_PERIOD * 1000L, FETCH_PERIOD * 1000L, TimeUnit.MILLISECONDS);
 	}
 
-	private void stopHearBeat() {
-		ClientLog.warn("stopHearBeat start");
+	private void stopHeartBeat() {
+		ClientLog.warn("stopHeartBeat start");
 
 		if (this.heartBeatTimer != null) {
-			this.heartBeatTimer.cancel();
+			this.heartBeatTimer.shutdown();
 			this.heartBeatTimer = null;
-			ClientLog.warn("stopHearBeat canceled");
+			ClientLog.warn("stopHeartBeat end");
 		}
 	}
 
@@ -151,33 +169,36 @@ public class TunaWebsocketClient implements TunaClient {
 		ClientLog.warn("stopReconnect start");
 
 		if (this.reconnectTimer != null) {
-			this.reconnectTimer.cancel();
+			this.reconnectTimer.shutdown();
 			this.reconnectTimer = null;
-			ClientLog.warn("reconnectTimer stopped");
+			ClientLog.warn("stopReconnect end");
 
 		}
 	}
 
 	void send(WebSocketMessage message) {
-		ClientLog.warn("websocket client send:" + JSON.toJSONString(message));
+		ClientLog.warn("WebSocket client send:" + JSON.toJSONString(message));
 		this.webSocketClient.send(message);
 	}
 
 	private void startReconnect() {
-		this.reconnectTimer = new Timer("tuna-reconnect", true);
-		this.reconnectTimer.schedule(new TimerTask() {
+		this.reconnectTimer = Executors.newSingleThreadScheduledExecutor();
+		this.reconnectTimer = new ScheduledThreadPoolExecutor(1, new NamedThreadFactory("reconnect-schedule-pool", Boolean.TRUE, Thread.NORM_PRIORITY));
+		this.reconnectTimer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
 				try {
 					ClientLog.warn("reconnect start");
-					if (!webSocketClient.isValid()) {//链接已经断开，重新链接
+					if (!webSocketClient.isValid()) {
+						//链接已经断开，重新链接
 						isConnect.set(false);
 						webSocketClient.connect();
-						webSocketClient.sendConnect(appKey,secret);
-					}else if (!isConnect.get() && webSocketClient.isValid()){ //链接还在，但是未保持websocket长链
+						webSocketClient.sendConnect(appKey, secret);
+					} else if (!isConnect.get() && webSocketClient.isValid()) {
+						//链接还在，但是未保持WebSocket长链
 						isConnect.set(false);
-						webSocketClient.sendConnect(appKey,secret);
-					} else{
+						webSocketClient.sendConnect(appKey, secret);
+					} else {
 						ClientLog.info("reconnect end,no need reconnect");
 					}
 				} catch (Exception e) {
@@ -185,7 +206,7 @@ public class TunaWebsocketClient implements TunaClient {
 
 				}
 			}
-		}, RECONNECT_INTERVAL * 1000L, RECONNECT_INTERVAL * 1000L);
+		}, RECONNECT_INTERVAL * 1000L, RECONNECT_INTERVAL * 1000L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -196,10 +217,10 @@ public class TunaWebsocketClient implements TunaClient {
 	public void shutdown() {
 		ClientLog.warn("shutdownGracefully start");
 
-		this.stopHearBeat();
+		this.stopHeartBeat();
 		this.stopReconnect();
-		internalMessageHandler.stop();
 		webSocketClient.sendClose();
+		internalMessageHandler.stop();
 		try {
 			ClientLog.warn("shutdownGracefully sleep start");
 
@@ -208,6 +229,7 @@ public class TunaWebsocketClient implements TunaClient {
 		} catch (InterruptedException e) {
 			ClientLog.error("shutdownGracefully Interrupted", e);
 		}
+		isConnect.set(false);
 		this.shutdownFinally();
 
 	}
@@ -264,6 +286,14 @@ public class TunaWebsocketClient implements TunaClient {
 		this.oceanUrl = oceanUrl;
 	}
 
+	public int getThreadNum() {
+		return threadNum;
+	}
+
+	public void setThreadNum(int threadNum) {
+		this.threadNum = threadNum;
+	}
+
 	public WebSocketMessageHandler getTunaMessageHandler() {
 		return tunaMessageHandler;
 	}
@@ -272,7 +302,7 @@ public class TunaWebsocketClient implements TunaClient {
 		this.tunaMessageHandler = tunaMessageHandler;
 	}
 
-	public void setConnect(){
+	public void setConnect() {
 		this.isConnect.set(true);
 	}
 
@@ -280,8 +310,8 @@ public class TunaWebsocketClient implements TunaClient {
 	 * 是否正常连接
 	 * @return
      */
-	public boolean isConnect(){
-		if(isConnect.get() && webSocketClient.isValid()){
+	public boolean isConnect() {
+		if (isConnect.get() && webSocketClient.isValid()) {
 			return true;
 		}
 		return false;

@@ -105,7 +105,7 @@ public class SimpleHttpProcessorHandler extends SimpleChannelInboundHandler<Defa
 				String signInServerSide = SignatureUtil.encodeHexStr(bytes);
 				String signFromClient = alibabaHttpRequest.getSignatureFromClient();
 				if (!signInServerSide.equalsIgnoreCase(signFromClient)) {
-					logger.warn("The signature fr om client is not same with the signature in server side.");
+					logger.warn("The signature from the client is not same with the signature in server side.");
 					boolean continueOnSignatureValidationFailed = messageHandler.continueOnSignatureValidationFailed(
 							signFromClient, signInServerSide);
 					if (!continueOnSignatureValidationFailed) {
@@ -125,13 +125,13 @@ public class SimpleHttpProcessorHandler extends SimpleChannelInboundHandler<Defa
 			ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 			return;
 		} catch (MessageProcessException mEx) {
-			logger.error("MessageProcessException occured.", mEx);
+			logger.error("MessageProcessException occurs.", mEx);
 			final FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
 					HttpResponseStatus.BAD_REQUEST);
 			ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 			return;
 		} catch (Exception mEx) {
-			logger.error("Exception occured.", mEx);
+			logger.error("Exception occurs.", mEx);
 			final FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
 					HttpResponseStatus.INTERNAL_SERVER_ERROR);
 			ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

@@ -26,32 +26,39 @@ public class WebSocketMessage {
 	 * 系统内部字段
 	 */
 	private Long relatedId;
+
 	private Long relatedMsgTime;
 
 	/**
 	 * 应用 AppKey
 	 */
 	String appKey;
+
 	/**
 	 * 应用 AppSecret
 	 */
 	String secret;
+
 	/**
 	 * webocket消息类型
 	 */
 	String type;
+
 	/**
 	 * 消息id
 	 */
 	private String id;
+
 	/**
 	 * 消息推送时间
 	 */
 	private Long pubTime;
+
 	/**
 	 * 消息内容，json串格式
 	 */
 	private String content;
+
 	/**
 	 * 签名
 	 */
@@ -61,6 +68,7 @@ public class WebSocketMessage {
 	 * isv端消息处理耗时
 	 */
 	private long costInIsv;
+
 	/**
 	 * 数据来源。包括
 	 * MOCK: 测试数据。使用消息测试工具产生。
@@ -71,24 +79,31 @@ public class WebSocketMessage {
 	public long getCostInIsv() {
 		return costInIsv;
 	}
+
 	public void setCostInIsv(long costInIsv) {
 		this.costInIsv = costInIsv;
 	}
+
 	public String getSign() {
 		return sign;
 	}
+
 	public void setSign(String sign) {
 		this.sign = sign;
 	}
+
 	public String getId() {
 		return id;
 	}
+
 	public void setId(String id) {
 		this.id = id;
 	}
+
 	public Long getPubTime() {
 		return pubTime;
 	}
+
 	public void setPubTime(Long pubTime) {
 		this.pubTime = pubTime;
 	}
@@ -100,39 +115,45 @@ public class WebSocketMessage {
 	public void setRelatedMsgTime(Long relatedMsgTime) {
 		this.relatedMsgTime = relatedMsgTime;
 	}
+
 	public String getContent() {
 		return content;
 	}
+
 	public void setContent(String content) {
 		this.content = content;
 	}
+
 	public String getType() {
 		return type;
 	}
+
 	public void setType(String type) {
 		this.type = type;
 	}
+
 	public String getAppKey() {
 		return appKey;
 	}
+
 	public void setAppKey(String appKey) {
 		this.appKey = appKey;
 	}
+
 	public String getSecret() {
 		return secret;
 	}
+
 	public void setSecret(String secret) {
 		this.secret = secret;
 	}
+
 	public Long getRelatedId() {
 		return relatedId;
 	}
+
 	public void setRelatedId(Long outgoingId) {
 		this.relatedId = outgoingId;
-	}
-	@Override
-	public String toString() {
-		return JSON.toJSONString(this);
 	}
 
 	public String getMsgSource() {
@@ -142,5 +163,9 @@ public class WebSocketMessage {
 	public void setMsgSource(String msgSource) {
 		this.msgSource = msgSource;
 	}
-	
+
+	@Override
+	public String toString() {
+		return JSON.toJSONString(this);
+	}
 }

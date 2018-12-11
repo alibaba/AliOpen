@@ -37,20 +37,18 @@ public class NamedThreadFactory implements ThreadFactory {
 	}
 
 	public NamedThreadFactory(String prefix, boolean isDaemon, int priority) {
-		SecurityManager s = System.getSecurityManager();
-		this.group = (s != null) ?
-				s.getThreadGroup() :
-				Thread.currentThread().getThreadGroup();
+		SecurityManager sm = System.getSecurityManager();
+		this.group = (sm != null) ? sm.getThreadGroup() : Thread.currentThread().getThreadGroup();
 		this.prefix = prefix + "-" + poolNumber.getAndIncrement() + "-thread-";
 		this.isDaemon = isDaemon;
 		this.priority = priority;
 	}
 
 	public Thread newThread(Runnable r) {
-		Thread t = new Thread(group, r, prefix + threadNumber.getAndIncrement(), 0);
-		t.setDaemon(isDaemon);
-		t.setPriority(priority);
-		return t;
+		Thread thread = new Thread(group, r, prefix + threadNumber.getAndIncrement(), 0);
+		thread.setDaemon(isDaemon);
+		thread.setPriority(priority);
+		return thread;
 	}
 
 }

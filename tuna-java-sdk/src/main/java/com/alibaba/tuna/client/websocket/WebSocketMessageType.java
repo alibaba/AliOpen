@@ -17,7 +17,7 @@
 package com.alibaba.tuna.client.websocket;
 
 /**
- * websocket协议，报文类型
+ * WebSocket协议，报文类型
  */
 public enum WebSocketMessageType {
 	CONNECT,CONNECT_ACK,HEARTBEAT,CONFIRM,SERVER_PUSH,CLIENT_PUSH,CLOSE,SYSTEM;

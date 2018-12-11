@@ -25,7 +25,7 @@ public class HttpParamOutputStream extends ByteArrayOutputStream {
 
 	public Map<String, String> toParameters() {
 		try {
-			String content = new String(buf, charset);
+			String content = this.toString(charset);
 			return HttpHelper.parseParameters(content);
 		} catch (UnsupportedEncodingException e) {
 		}

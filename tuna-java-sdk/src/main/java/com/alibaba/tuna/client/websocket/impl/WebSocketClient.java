@@ -34,12 +34,12 @@ import java.net.URI;
 import com.alibaba.tuna.fastjson.JSON;
 
 /**
- * websocket client封装
+ * WebSocket client封装
  * @author qiheng
  *
  */
 public final class WebSocketClient {
-	public static String CLIENT_VERSION="client_version";
+	public static String CLIENT_VERSION = "client_version";
 
 	private EventLoopGroup group;
 	private Bootstrap boot;
@@ -50,11 +50,13 @@ public final class WebSocketClient {
 
 	private static final int DEFAULT_PORT = 80;
 
-	//内部使用
+	/**
+	 * 内部使用
+	 */
 	private String host;
 	private int port;
 
-	public WebSocketClient(String oceanUrl,ClientLog.InnerHandler innerHandler){
+	public WebSocketClient(String oceanUrl, ClientLog.InnerHandler innerHandler) {
 		this.oceanUrl = oceanUrl;
 		this.innerHandler = innerHandler;
 	}
@@ -62,11 +64,11 @@ public final class WebSocketClient {
 	public void connect() throws Exception {
 		try {
 			//关闭上次的资源
-			if(group!=null){
+			if (group != null) {
 				group.shutdownGracefully();
 			}
 
-			if(channel!=null){
+			if (channel != null) {
 				channel.close();
 			}
 
@@ -74,34 +76,28 @@ public final class WebSocketClient {
 			group = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors());
 
 			URI uri = new URI(oceanUrl);
-			String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
+			String scheme = (uri.getScheme() == null) ? "ws" : uri.getScheme();
 			final boolean ssl = "wss".equalsIgnoreCase(scheme);
 
-			port = uri.getPort() == -1 ? DEFAULT_PORT : uri.getPort();
+			port = (uri.getPort() == -1) ? DEFAULT_PORT : uri.getPort();
 			host = uri.getHost();
 
 			//初始化handshake
 			HttpHeaders httpHeaders = new DefaultHttpHeaders();
-			httpHeaders.add(CLIENT_VERSION,1);
-			// Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08
-			// or
-			// V00.
-			// If you change it to V00, ping is not supported and remember to
-			// change
-			// HttpResponseDecoder to WebSocketHttpResponseDecoder in the
-			// pipeline.
+			httpHeaders.add(CLIENT_VERSION, 1);
+
 			WebSocketClientHandshaker webSocketClientHandshaker = WebSocketClientHandshakerFactory.newHandshaker(uri, WebSocketVersion.V13, null, false, httpHeaders);
 			TextWebSocketFrameHandler textWebSocketFrameHandler= new TextWebSocketFrameHandler();
 			textWebSocketFrameHandler.setInnerHandler(innerHandler);
 
 			boot.group(group).channel(NioSocketChannel.class)
 					.option(ChannelOption.TCP_NODELAY, true)
-					.handler(new WebSocketClientInitializer(webSocketClientHandshaker,textWebSocketFrameHandler));
+					.handler(new WebSocketClientInitializer(webSocketClientHandshaker, textWebSocketFrameHandler));
 
 
 			doConnect();
 		} catch (Exception e) {
-			ClientLog.error("webclient connect error" ,e);
+			ClientLog.error("WebSocket client connect error" ,e);
 			throw e;
 		}
 
@@ -113,8 +109,7 @@ public final class WebSocketClient {
 
 	public void send(Object msg) {
 		if (channel != null && channel.isActive()) {
-			TextWebSocketFrame frame = new TextWebSocketFrame(
-					JSON.toJSONString(msg));
+			TextWebSocketFrame frame = new TextWebSocketFrame(JSON.toJSONString(msg));
 			channel.writeAndFlush(frame);
 		}
 	}
@@ -128,10 +123,10 @@ public final class WebSocketClient {
 	}
 
 	public void shutDown() {
-		ClientLog.warn("webclient shutdown");
+		ClientLog.warn("WebSocket client shutdown");
 
 		if (group != null) {
-			ClientLog.warn("shudown group");
+			ClientLog.warn("shutdown group");
 			group.shutdownGracefully();
 		}
 		if (channel != null) {
@@ -146,21 +141,21 @@ public final class WebSocketClient {
 		}
 	}
 
-	public void sendConnect(String appkey,String secret) {
+	public void sendConnect(String appKey, String secret) {
 
-		WebSocketMessage tm = new WebSocketMessage();
-		tm.setAppKey(appkey);
-		tm.setType(WebSocketMessageType.CONNECT.name());
-		tm.setPubTime(System.currentTimeMillis());
+		WebSocketMessage wsm = new WebSocketMessage();
+		wsm.setAppKey(appKey);
+		wsm.setType(WebSocketMessageType.CONNECT.name());
+		wsm.setPubTime(System.currentTimeMillis());
 		try {
-			tm.setSign(ClientUtils.sign(tm, secret));
+			wsm.setSign(ClientUtils.sign(wsm, secret));
 		} catch (Exception e) {
 			e.printStackTrace();
-			ClientLog.warn("TunaWebsocketClient sign error" + e.getMessage());
+			ClientLog.warn("TunaWebSocketClient sign error " + e.getMessage());
 		}
-		ClientLog.warn("TunaWebsocketClient doconnect" + JSON.toJSONString(tm));
+		ClientLog.warn("TunaWebSocketClient do connect " + JSON.toJSONString(wsm));
 
-		send(tm);
+		send(wsm);
 	}
 
 }

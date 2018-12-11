@@ -34,7 +34,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-
+            //do nothing
         } else {
             super.userEventTriggered(ctx, evt);
         }
@@ -42,15 +42,14 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
     @Override
     public void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame frame) throws Exception {
         TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-        ClientLog.warn("WebSocket Client received message: "
-                + textFrame.text());
+        ClientLog.warn("WebSocket Client received message: " + textFrame.text());
         WebSocketMessage message = JSON.parseObject(textFrame.text(), WebSocketMessage.class);
         innerHandler.onMessage(message);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ClientLog.error(cause.getMessage(),cause);
+        ClientLog.error(cause.getMessage(), cause);
         ctx.close();
     }
 

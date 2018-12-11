@@ -26,7 +26,7 @@ import com.alibaba.tuna.netty.handler.codec.http.websocketx.WebSocketClientHands
 import com.alibaba.tuna.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 
 /**
- * 添加websocket协议支持，通道创建时，pipeline默认添加webscoket handler
+ * 添加WebSocket协议支持，通道创建时，pipeline默认添加WebSocket handler
  */
 public class WebSocketClientInitializer extends ChannelInitializer<SocketChannel> {
     public static int MAX_LENGTH=65536;
@@ -36,16 +36,13 @@ public class WebSocketClientInitializer extends ChannelInitializer<SocketChannel
 
      WebSocketClientInitializer(WebSocketClientHandshaker webSocketClientHandshaker, TextWebSocketFrameHandler textWebSocketFrameHandler){
          this.textWebSocketFrameHandler = textWebSocketFrameHandler;
-         this.webSocketClientHandshaker=webSocketClientHandshaker;
+         this.webSocketClientHandshaker = webSocketClientHandshaker;
     }
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception{
         ChannelPipeline p = ch.pipeline();
-        //if (sslCtx != null) {
-        //p.addLast(sslCtx.newHandler(ch.alloc(), host,
-        //	port));
-        //}
+
         p.addLast(new HttpClientCodec());//Http协议编码解码器
         p.addLast(new HttpObjectAggregator(MAX_LENGTH));//聚合 HttpRequest
         p.addLast(new WebSocketClientProtocolHandler(webSocketClientHandshaker,true));
