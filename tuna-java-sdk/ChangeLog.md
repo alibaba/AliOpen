@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.9.0] - 2018-05-22 - archer.zb
+## [0.9.0] - 2018-12-13 - archer.zb
 ### Added
- - WebSocket 通道 SDK
- - HttpCallback 通道 SDK
+ - 修复客户端返回401 bug
+ - 新增客户端可自定义线程池大小feature
